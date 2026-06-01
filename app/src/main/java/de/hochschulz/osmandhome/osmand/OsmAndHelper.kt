@@ -9,6 +9,7 @@ import android.os.IBinder
 import android.util.Log
 import de.hochschulz.osmandhome.api.HaState
 import de.hochschulz.osmandhome.config.TrackedEntityConfig
+import de.hochschulz.osmandhome.service.TrackerToggleActivity
 import de.hochschulz.osmandhome.util.AppPrefs
 import de.hochschulz.osmandhome.util.ColorAssigner
 import net.osmand.aidlapi.IOsmAndAidlInterface
@@ -16,10 +17,14 @@ import net.osmand.aidlapi.map.ALatLon
 import net.osmand.aidlapi.maplayer.AMapLayer
 import net.osmand.aidlapi.maplayer.AddMapLayerParams
 import net.osmand.aidlapi.maplayer.RemoveMapLayerParams
+import net.osmand.aidlapi.maplayer.UpdateMapLayerParams
 import net.osmand.aidlapi.maplayer.point.AMapPoint
 import net.osmand.aidlapi.maplayer.point.AddMapPointParams
 import net.osmand.aidlapi.maplayer.point.RemoveMapPointParams
 import net.osmand.aidlapi.maplayer.point.UpdateMapPointParams
+import net.osmand.aidlapi.mapwidget.AMapWidget
+import net.osmand.aidlapi.mapwidget.AddMapWidgetParams
+import net.osmand.aidlapi.mapwidget.UpdateMapWidgetParams
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -27,12 +32,12 @@ class OsmAndHelper(private val ctx: Context) {
 
     private var aidl: IOsmAndAidlInterface? = null
     private val activeIds = mutableSetOf<String>()
-    var onConnected: (() -> Unit)?    = null
+    var onConnected: (() -> Unit)? = null
     var onDisconnected: (() -> Unit)? = null
     val isConnected get() = aidl != null
 
     companion object {
-        const val LAYER_ID   = "ha_people_layer"
+        const val LAYER_ID = "ha_people_layer"
         const val LAYER_NAME = "Home Assistant Entities"
         val PACKAGES = listOf("net.osmand.plus", "net.osmand", "net.osmand.dev")
         private const val TAG = "OsmAndHelper"
@@ -40,14 +45,21 @@ class OsmAndHelper(private val ctx: Context) {
 
     private val conn = object : ServiceConnection {
         override fun onServiceConnected(n: ComponentName, b: IBinder) {
-            aidl = IOsmAndAidlInterface.Stub.asInterface(b)
+            val aidl = IOsmAndAidlInterface.Stub.asInterface(b)
+            this@OsmAndHelper.aidl = aidl
             runCatching {
-                val layer = AMapLayer(LAYER_ID, LAYER_NAME, 5.5f, null)
-                layer.isImagePoints = true
-                aidl?.addMapLayer(AddMapLayerParams(layer))
+                if (aidl != null) {
+                    val layer = AMapLayer(LAYER_ID, LAYER_NAME, 5.5f, null)
+                    layer.isImagePoints = true
+                    if (!aidl.updateMapLayer(UpdateMapLayerParams(layer))) {
+                        aidl.addMapLayer(AddMapLayerParams(layer))
+                    }
+                    registerWidget(true)
+                }
             }
             onConnected?.invoke()
         }
+
         override fun onServiceDisconnected(n: ComponentName) {
             aidl = null; onDisconnected?.invoke()
         }
@@ -75,11 +87,11 @@ class OsmAndHelper(private val ctx: Context) {
     }
 
     fun upsertMarker(state: HaState, cfg: TrackedEntityConfig?) {
-        val lat   = state.attributes.latitude  ?: return
-        val lon   = state.attributes.longitude ?: return
+        val lat = state.attributes.latitude ?: return
+        val lon = state.attributes.longitude ?: return
         val iface = aidl ?: return
 
-        val name  = cfg?.displayName?.takeIf { it.isNotBlank() }
+        val name = cfg?.displayName?.takeIf { it.isNotBlank() }
             ?: state.attributes.friendlyName ?: state.entityId
         val color = cfg?.customColor ?: ColorAssigner.forEntityArgb(state.entityId)
         val initials = name.split(" ").take(2)
@@ -90,7 +102,7 @@ class OsmAndHelper(private val ctx: Context) {
         val details = buildList {
             add("State: ${state.state}")
             state.attributes.batteryLevel?.let { add("Battery: $it%") }
-            state.attributes.gpsAccuracy?.let  { add("Accuracy: ${"%.0f".format(it)} m") }
+            state.attributes.gpsAccuracy?.let { add("Accuracy: ${"%.0f".format(it)} m") }
             add("Updated: ${SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())}")
             add("Entity: ${state.entityId}")
         }
@@ -128,7 +140,10 @@ class OsmAndHelper(private val ctx: Context) {
         }
     }
 
-    fun refresh()    { runCatching { aidl?.refreshMap() } }
+    fun refresh() {
+        runCatching { aidl?.refreshMap() }
+    }
+
     fun currentIds() = activeIds.toSet()
 
     fun detect(): String? {
@@ -140,6 +155,42 @@ class OsmAndHelper(private val ctx: Context) {
         return PACKAGES.firstOrNull { pkg ->
             intent.`package` = pkg
             ctx.packageManager.resolveService(intent, 0) != null
+        }
+    }
+
+    fun registerWidget(running: Boolean) {
+        val iface = aidl ?: return
+        val action = if (running) TrackerToggleActivity.ACTION_STOP
+        else TrackerToggleActivity.ACTION_START
+
+        // Fully explicit: component = package + class name — no intent-filter resolution needed
+        val intent = Intent().apply {
+            component = ComponentName(
+                ctx.packageName,
+                TrackerToggleActivity::class.java.name   // "de.hochschulz.osmandhome.service.TrackerToggleActivity"
+            )
+            this.action = action
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_NO_ANIMATION       // ← suppress the task-switch animation
+            )
+        }
+        val widget = AMapWidget(
+            "ha_tracker_widget",
+            "ic_action_location_color",
+            "HA Tracker",
+            "ic_action_location_color",
+            "ic_action_location_color",
+            if (running) "ON" else "OFF",
+            "HA Tracker",
+            25,
+            intent
+        )
+        runCatching {
+            //iface.removeMapWidget(RemoveMapWidgetParams("ha_tracker_widget"))
+            if (!iface.updateMapWidget(UpdateMapWidgetParams(widget))) {
+                iface.addMapWidget(AddMapWidgetParams(widget))
+            }
         }
     }
 }
