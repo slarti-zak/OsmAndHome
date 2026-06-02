@@ -181,8 +181,8 @@ class OsmAndHelper(private val ctx: Context) {
             "HA Tracker",
             "ic_action_location_color",
             "ic_action_location_color",
-            if (running) "ON" else "OFF",
-            "HA Tracker",
+            if (running) "HA ON" else "HA OFF",
+            "",
             25,
             intent
         )
