@@ -26,7 +26,8 @@ import net.osmand.aidlapi.mapwidget.AMapWidget
 import net.osmand.aidlapi.mapwidget.AddMapWidgetParams
 import net.osmand.aidlapi.mapwidget.UpdateMapWidgetParams
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 class OsmAndHelper(private val ctx: Context) {
 
@@ -61,13 +62,14 @@ class OsmAndHelper(private val ctx: Context) {
         }
 
         override fun onServiceDisconnected(n: ComponentName) {
-            aidl = null; onDisconnected?.invoke()
+            aidl = null
+            onDisconnected?.invoke()
         }
     }
 
     fun bind(): Boolean {
         val pkg = AppPrefs.getOsmAndPackage(ctx) ?: detect() ?: return false
-        val flags = if (Build.VERSION.SDK_INT >= 34)
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
             Context.BIND_AUTO_CREATE or Context.BIND_ALLOW_ACTIVITY_STARTS
         else
             Context.BIND_AUTO_CREATE
@@ -82,7 +84,8 @@ class OsmAndHelper(private val ctx: Context) {
             if (AppPrefs.getRemoveOnStop(ctx))
                 runCatching { aidl?.removeMapLayer(RemoveMapLayerParams(LAYER_ID)) }
             runCatching { ctx.unbindService(conn) }
-            aidl = null; activeIds.clear()
+            aidl = null
+            activeIds.clear()
         }
     }
 
@@ -112,7 +115,7 @@ class OsmAndHelper(private val ctx: Context) {
 
         val point = AMapPoint(
             state.entityId,          // pointId
-            initials,                // shortName — shown on map bubble
+            name,                // shortName — shown on map bubble
             name,                    // fullName — shown in context menu header
             "Home Assistant",        // typeName — shown in context menu subheader
             LAYER_ID,
