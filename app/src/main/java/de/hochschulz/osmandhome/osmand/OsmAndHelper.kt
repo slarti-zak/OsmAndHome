@@ -25,9 +25,9 @@ import net.osmand.aidlapi.maplayer.point.UpdateMapPointParams
 import net.osmand.aidlapi.mapwidget.AMapWidget
 import net.osmand.aidlapi.mapwidget.AddMapWidgetParams
 import net.osmand.aidlapi.mapwidget.UpdateMapWidgetParams
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.time.OffsetDateTime
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 class OsmAndHelper(private val ctx: Context) {
 
@@ -101,17 +101,31 @@ class OsmAndHelper(private val ctx: Context) {
             .mapNotNull { it.firstOrNull()?.uppercaseChar() }.joinToString("")
             .ifEmpty { name.take(2).uppercase() }
 
+        val homeAssistantUpdateDateTime = OffsetDateTime.parse(state.lastUpdated)
+        val now = ZonedDateTime.now()
+        val lastUpdate = java.time.Duration.between(homeAssistantUpdateDateTime, now)
+
         // details is List<String> in the real OsmAnd API
         val details = buildList {
             add("State: ${state.state}")
             state.attributes.batteryLevel?.let { add("Battery: $it%") }
             state.attributes.gpsAccuracy?.let { add("Accuracy: ${"%.0f".format(it)} m") }
-            add("Updated: ${SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())}")
+            add("Updated from app: ${DateTimeFormatter.RFC_1123_DATE_TIME.format(now)}")
+            add(
+                "Updated in Home Assistant: ${
+                    DateTimeFormatter.RFC_1123_DATE_TIME.format(
+                        homeAssistantUpdateDateTime
+                    )
+                }"
+            )
             add("Entity: ${state.entityId}")
         }
 
         // params is Map<String,String> — use for extra metadata
-        val params = mapOf("entity_id" to state.entityId)
+        val params = mapOf(
+            "entity_id" to state.entityId,
+            AMapPoint.POINT_STALE_LOC_PARAM to if (lastUpdate > java.time.Duration.ofMinutes(30)) "true" else "false"
+        )
 
         val point = AMapPoint(
             state.entityId,          // pointId

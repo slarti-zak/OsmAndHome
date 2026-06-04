@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">OsmandHome</string>
+    <string name="home_assistant_entities">Entities</string>
+    <string name="home_assistant_search_entities">Search entities…</string>
+    <string name="selection_enable_all">Enable all</string>
+    <string name="selection_disable_all">Disable all</string>
+    <string name="selection_reset">Reset</string>
+    <string name="home_assistant_server_url">Server URL</string>
 </resources>

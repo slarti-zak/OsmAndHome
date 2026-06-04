@@ -1,11 +1,40 @@
 package de.hochschulz.osmandhome.ui.screens
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.LocationOff
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -18,11 +47,14 @@ import de.hochschulz.osmandhome.ui.navigation.Route
 @Composable
 fun HomeScreen(vm: AppViewModel, nav: NavController) {
     val running by vm.serviceRunning.collectAsStateWithLifecycle()
-    val error   by vm.error.collectAsStateWithLifecycle()
-    val snack   = remember { SnackbarHostState() }
+    val error by vm.error.collectAsStateWithLifecycle()
+    val snack = remember { SnackbarHostState() }
 
     LaunchedEffect(error) {
-        error?.let { snack.showSnackbar(it); vm.clearError() }
+        error?.let {
+            snack.showSnackbar(it)
+            vm.clearError()
+        }
     }
 
     Scaffold(
@@ -48,9 +80,9 @@ fun HomeScreen(vm: AppViewModel, nav: NavController) {
         ) {
             // Status indicator
             Surface(
-                shape  = MaterialTheme.shapes.large,
-                color  = if (running) MaterialTheme.colorScheme.primaryContainer
-                         else MaterialTheme.colorScheme.surfaceVariant,
+                shape = MaterialTheme.shapes.large,
+                color = if (running) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -62,7 +94,7 @@ fun HomeScreen(vm: AppViewModel, nav: NavController) {
                         if (running) Icons.Default.LocationOn else Icons.Default.LocationOff,
                         contentDescription = null,
                         tint = if (running) MaterialTheme.colorScheme.primary
-                               else MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Column {
                         Text(
@@ -84,9 +116,11 @@ fun HomeScreen(vm: AppViewModel, nav: NavController) {
             AnimatedContent(targetState = running, label = "startStop") { isRunning ->
                 if (isRunning) {
                     Button(
-                        onClick  = vm::stopService,
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
-                        colors   = ButtonDefaults.buttonColors(
+                        onClick = vm::stopService,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.error
                         )
                     ) {
@@ -96,8 +130,10 @@ fun HomeScreen(vm: AppViewModel, nav: NavController) {
                     }
                 } else {
                     Button(
-                        onClick  = vm::startService,
-                        modifier = Modifier.fillMaxWidth().height(52.dp)
+                        onClick = vm::startService,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
                     ) {
                         Icon(Icons.Default.PlayArrow, null)
                         Spacer(Modifier.width(8.dp))
@@ -108,8 +144,10 @@ fun HomeScreen(vm: AppViewModel, nav: NavController) {
 
             // Entities button
             OutlinedButton(
-                onClick  = { nav.navigate(Route.Discovery.path) },
-                modifier = Modifier.fillMaxWidth().height(52.dp)
+                onClick = { nav.navigate(Route.Discovery.path) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
             ) {
                 Icon(Icons.Default.People, null)
                 Spacer(Modifier.width(8.dp))
@@ -117,8 +155,10 @@ fun HomeScreen(vm: AppViewModel, nav: NavController) {
             }
 
             OutlinedButton(
-                onClick  = { nav.navigate(Route.Settings.path) },
-                modifier = Modifier.fillMaxWidth().height(52.dp)
+                onClick = { nav.navigate(Route.Settings.path) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
             ) {
                 Icon(Icons.Default.Tune, null)
                 Spacer(Modifier.width(8.dp))

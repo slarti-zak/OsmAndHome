@@ -1,6 +1,12 @@
 package de.hochschulz.osmandhome.ui.screens
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -8,13 +14,34 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.*
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import de.hochschulz.osmandhome.R
 import de.hochschulz.osmandhome.ui.AppViewModel
 
 private val INTERVAL_OPTIONS = listOf(
@@ -55,24 +82,24 @@ fun SettingsScreen(vm: AppViewModel, nav: NavController) {
             SectionHeader("Home Assistant Server")
 
             OutlinedTextField(
-                value         = draft.serverUrl,
+                value = draft.serverUrl,
                 onValueChange = { draft = draft.copy(serverUrl = it) },
-                label         = { Text("Server URL") },
-                placeholder   = { Text("https://homeassistant.local:8123") },
-                modifier      = Modifier.fillMaxWidth(),
-                singleLine    = true,
+                label = { Text(stringResource(R.string.home_assistant_server_url)) },
+                placeholder = { Text("https://homeassistant.local:8123") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
             )
 
             OutlinedTextField(
-                value         = draft.token,
+                value = draft.token,
                 onValueChange = { draft = draft.copy(token = it) },
-                label         = { Text("Long-lived Access Token") },
-                modifier      = Modifier.fillMaxWidth(),
-                singleLine    = true,
+                label = { Text("Long-lived Access Token") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
                 visualTransformation = if (tokenVisible) VisualTransformation.None
-                                       else PasswordVisualTransformation(),
-                trailingIcon  = {
+                else PasswordVisualTransformation(),
+                trailingIcon = {
                     IconButton(onClick = { tokenVisible = !tokenVisible }) {
                         Icon(
                             if (tokenVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
@@ -86,22 +113,30 @@ fun SettingsScreen(vm: AppViewModel, nav: NavController) {
             SectionHeader("Polling")
 
             ExposedDropdownMenuBox(
-                expanded         = intervalExpanded,
+                expanded = intervalExpanded,
                 onExpandedChange = { intervalExpanded = it }
             ) {
                 OutlinedTextField(
-                    value        = INTERVAL_OPTIONS.find { it.first == draft.intervalMs }?.second ?: "1 minute",
+                    value = INTERVAL_OPTIONS.find { it.first == draft.intervalMs }?.second
+                        ?: "1 minute",
                     onValueChange = {},
-                    readOnly     = true,
-                    label        = { Text("Update interval") },
+                    readOnly = true,
+                    label = { Text("Update interval") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(intervalExpanded) },
-                    modifier     = Modifier.fillMaxWidth().menuAnchor()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
                 )
-                ExposedDropdownMenu(expanded = intervalExpanded, onDismissRequest = { intervalExpanded = false }) {
+                ExposedDropdownMenu(
+                    expanded = intervalExpanded,
+                    onDismissRequest = { intervalExpanded = false }) {
                     INTERVAL_OPTIONS.forEach { (ms, label) ->
                         DropdownMenuItem(
-                            text    = { Text(label) },
-                            onClick = { draft = draft.copy(intervalMs = ms); intervalExpanded = false }
+                            text = { Text(label) },
+                            onClick = {
+                                draft = draft.copy(intervalMs = ms)
+                                intervalExpanded = false
+                            }
                         )
                     }
                 }
@@ -123,8 +158,13 @@ fun SettingsScreen(vm: AppViewModel, nav: NavController) {
             Spacer(Modifier.height(8.dp))
 
             Button(
-                onClick  = { vm.saveSettings(draft); nav.popBackStack() },
-                modifier = Modifier.fillMaxWidth().height(52.dp)
+                onClick = {
+                    vm.saveSettings(draft)
+                    nav.popBackStack()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
             ) { Text("Save Settings") }
         }
     }
@@ -132,8 +172,10 @@ fun SettingsScreen(vm: AppViewModel, nav: NavController) {
 
 @Composable
 private fun SectionHeader(text: String) =
-    Text(text, style = MaterialTheme.typography.labelLarge,
-         color = MaterialTheme.colorScheme.primary)
+    Text(
+        text, style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary
+    )
 
 @Composable
 private fun LabeledSwitch(label: String, checked: Boolean, onChanged: (Boolean) -> Unit) {
