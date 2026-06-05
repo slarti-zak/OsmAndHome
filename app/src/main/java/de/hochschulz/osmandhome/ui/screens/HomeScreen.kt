@@ -37,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -57,12 +58,32 @@ fun HomeScreen(vm: AppViewModel, nav: NavController) {
         }
     }
 
+    HomeScreenContent(
+        running = running,
+        snack = snack,
+        onStart = vm::startService,
+        onStop = vm::stopService,
+        onOpenDiscovery = { nav.navigate(Route.Discovery.path) },
+        onOpenSettings = { nav.navigate(Route.Settings.path) }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeScreenContent(
+    running: Boolean,
+    snack: SnackbarHostState,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
+    onOpenDiscovery: () -> Unit,
+    onOpenSettings: () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("HA Tracker") },
                 actions = {
-                    IconButton(onClick = { nav.navigate(Route.Settings.path) }) {
+                    IconButton(onClick = onOpenSettings) {
                         Icon(Icons.Default.Settings, "Settings")
                     }
                 }
@@ -78,7 +99,6 @@ fun HomeScreen(vm: AppViewModel, nav: NavController) {
             verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Status indicator
             Surface(
                 shape = MaterialTheme.shapes.large,
                 color = if (running) MaterialTheme.colorScheme.primaryContainer
@@ -112,11 +132,10 @@ fun HomeScreen(vm: AppViewModel, nav: NavController) {
 
             Spacer(Modifier.height(8.dp))
 
-            // Start / Stop
             AnimatedContent(targetState = running, label = "startStop") { isRunning ->
                 if (isRunning) {
                     Button(
-                        onClick = vm::stopService,
+                        onClick = onStop,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
@@ -130,7 +149,7 @@ fun HomeScreen(vm: AppViewModel, nav: NavController) {
                     }
                 } else {
                     Button(
-                        onClick = vm::startService,
+                        onClick = onStart,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)
@@ -142,9 +161,8 @@ fun HomeScreen(vm: AppViewModel, nav: NavController) {
                 }
             }
 
-            // Entities button
             OutlinedButton(
-                onClick = { nav.navigate(Route.Discovery.path) },
+                onClick = onOpenDiscovery,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
@@ -155,7 +173,7 @@ fun HomeScreen(vm: AppViewModel, nav: NavController) {
             }
 
             OutlinedButton(
-                onClick = { nav.navigate(Route.Settings.path) },
+                onClick = onOpenSettings,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
@@ -166,4 +184,30 @@ fun HomeScreen(vm: AppViewModel, nav: NavController) {
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeScreenPreviewStopped() {
+    HomeScreenContent(
+        running = false,
+        snack = remember { SnackbarHostState() },
+        onStart = {},
+        onStop = {},
+        onOpenDiscovery = {},
+        onOpenSettings = {}
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeScreenPreviewRunning() {
+    HomeScreenContent(
+        running = true,
+        snack = remember { SnackbarHostState() },
+        onStart = {},
+        onStop = {},
+        onOpenDiscovery = {},
+        onOpenSettings = {}
+    )
 }
